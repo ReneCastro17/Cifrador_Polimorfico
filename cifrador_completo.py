@@ -74,33 +74,30 @@ def print_menu():
 #Acontinuacion vamos a definir las 3 funciones principales para el cifrado de datos
 #Mezcladora, Generadora y Mutadora
 def mez(P,S):
-    P = (P * S)  & 0xFFFFFFFFFFFFFFFF #Esto basicamente limita que el resultado no sea mayor de 64 bits
+    P = (P * S)  & 0xFFFFFFFFFFFFFFFF #Esto agrega una mascara de 64 bits
     return P #P cambio, ahora se considera un nuevo Pn (P0)
 
 def gene(P,S):
-    K = (P ^ S) & 0xFFFFFFFFFFFFFFFF #Operacion de prueba
+    K = (P ^ S) & 0xFFFFFFFFFFFFFFFF 
     return K #K es la key generada
 
 def muta(P,S):
-    S = (P + S) & 0xFFFFFFFFFFFFFFFF #Operacion de prueba
+    S = (P + S) & 0xFFFFFFFFFFFFFFFF 
     return S #S cambio, ahora se considera un nuevo Sn (S0)
 
 #Funcion para generar las keys
 def generate_keys(P,Q,S,N):
     global Keys
     Keys = [] #Reiniciamos la matriz de llaves
-    i = 0
     while N != 0: #Se crea la matriz de llaves
         P = mez(P,S) 
-        Keys.append(gene(P,S))
-        S = muta(P,S)
-        i += 1 #Contador
+        Keys.append(gene(P,Q))
+        S = muta(Q,S)
         N -= 1 #Decremento
         if N > 0:
             Q = mez(Q,S)
-            Keys.append(gene(Q,S))
+            Keys.append(gene(Q,P))
             S = muta(P,S)
-            i += 1
             N -= 1
 
 def generate_keysD(PD,QD,SD,ND):
@@ -109,13 +106,13 @@ def generate_keysD(PD,QD,SD,ND):
     i = 0
     while ND != 0: #Se crea la matriz de llaves
         PD = mez(PD,SD) 
-        KeysD.append(gene(PD,SD))
-        SD = muta(PD,SD)
+        KeysD.append(gene(PD,QD))
+        SD = muta(QD,SD)
         i += 1 #Contador
         ND -= 1 #Decremento
         if ND > 0:
             QD = mez(QD,SD)
-            KeysD.append(gene(QD,SD))
+            KeysD.append(gene(QD,PD))
             SD = muta(PD,SD)
             i += 1
             ND -= 1
@@ -214,6 +211,7 @@ def convertir_mensaje(mensaje):
         print(f"{VERDE}Mensaje descifrado: {mensaje.decode('utf-8')}{RESET}")
     except UnicodeDecodeError:
         print("El mensaje descifrado no es un texto válido en UTF-8.")
+        print(UnicodeDecodeError)
 
 #Mensajes de tipo FCM
 def fcm():
