@@ -76,11 +76,11 @@ def print_menu():
 def mez(P,S):
     P = (P * S)  & 0xFFFFFFFFFFFFFFFF #Esto agrega una mascara de 64 bits
     rotate_bits = S % 64 #Rotamos a la izquierda
-    P = ((P << rotate_bits) | (P >> (64 - rotate_bits)))
+    P = ((P << rotate_bits) | (P >> (64 - rotate_bits))) & 0xFFFFFFFFFFFFFFFF
     return P #P cambio, ahora se considera un nuevo Pn (P0)
 
 def gene(P,S):
-    K = (P ^ S) & 0xFFFFFFFFFFFFFFFF 
+    K = (P ^ S) & 0xFFFFFFFFFFFFFFFF # ^ es un XOR
     K = K ^ (0xDEADBEEF12365412) #Constante
     rotate_bits = P %  64 #Rotamos a la derecha
     K = ((K >> rotate_bits) | (K << (64 - rotate_bits))) & 0xFFFFFFFFFFFFFFFF
@@ -219,7 +219,6 @@ def convertir_mensaje(mensaje):
         print(f"{VERDE}Mensaje descifrado: {mensaje.decode('utf-8')}{RESET}")
     except UnicodeDecodeError:
         print("El mensaje descifrado no es un texto válido en UTF-8.")
-        print(UnicodeDecodeError)
 
 #Mensajes de tipo FCM
 def fcm():
@@ -436,9 +435,9 @@ def evaluar_calidad_llaves(llaves, nombre):
     unos = sum(bin(k).count('1') for k in llaves) #Cuenta cuanto unos hay en el entero de las llaves
     proporcion_unos = unos / total_bits #Queres que la mitad sean uno, la otra mitad ceros
     
-    print(f"Proporción de unos: {proporcion_unos:.3f} (ideal: 0.5)")
+    print(f"Proporción de unos: {proporcion_unos:.3f} (ideal: 0.5)\n")
     if proporcion_unos < 0.4 or proporcion_unos > 0.6: #Mensaje de advertencia en caso no se cumpla la proporcion
-        print("ADVERTENCIA: La proporcion de unos en las llaves no es adecuada. Reconciderar valores.")
+        print("ADVERTENCIA: La proporcion de unos en las llaves no es adecuada. Reconciderar valores\n")
     
     # Entropía aproximada
     from math import log2
@@ -446,9 +445,9 @@ def evaluar_calidad_llaves(llaves, nombre):
         entropia = 0
     else:
         entropia = - (proporcion_unos * log2(proporcion_unos) + (1-proporcion_unos) * log2(1-proporcion_unos))#Entropia de Shannon
-    print(f"Entropía aproximada: {entropia:.3f} bits/bit (ideal: 1.0)")
+    print(f"Entropía aproximada: {entropia:.3f} bits/bit (ideal: 1.0)\n")
     if entropia < 0.9:
-        print("ADVERTENCIA: La entropía es baja, las llaves no son suficientemente aleatorias.")
+        print("ADVERTENCIA: La entropía es baja, las llaves no son suficientemente aleatorias\n")
     
     #Diferencias entre llaves consecutivas (efecto avalancha en criptografia)
     if len(llaves) > 1:
@@ -457,9 +456,9 @@ def evaluar_calidad_llaves(llaves, nombre):
             diff = bin(llaves[i] ^ llaves[i+1]).count('1') #Cuenta los bits diferentes entre dos llaves
             diferencias.append(diff)
         diff_promedio = sum(diferencias) / len(diferencias)
-        print(f"Diferencia promedio entre llaves: {diff_promedio:.1f} bits (ideal: 32)")
+        print(f"Diferencia promedio entre llaves: {diff_promedio:.1f} bits (ideal: 32)\n")
         if diff_promedio < 20:
-            print("ADVERTENCIA: Las llaves son demasiado similares entre sí.")
+            print("ADVERTENCIA: Las llaves son demasiado similares entre sí\n")
 
 if __name__ == "__main__":
     main()
