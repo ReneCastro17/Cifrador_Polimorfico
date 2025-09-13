@@ -1,5 +1,5 @@
 import os #Para limpiar la pantalla
-import struct #Para convertir entr bytes y enteros
+import struct #Para convertir entero bytes y enteros
 
 #Declaramos las variables que se van a ocupar
 P, PD = 0, 0  # Primo P 
@@ -75,14 +75,22 @@ def print_menu():
 #Mezcladora, Generadora y Mutadora
 def mez(P,S):
     P = (P * S)  & 0xFFFFFFFFFFFFFFFF #Esto agrega una mascara de 64 bits
+    rotate_bits = S % 64 #Rotamos a la izquierda
+    P = ((P << rotate_bits) | (P >> (64 - rotate_bits)))
     return P #P cambio, ahora se considera un nuevo Pn (P0)
 
 def gene(P,S):
     K = (P ^ S) & 0xFFFFFFFFFFFFFFFF 
+    K = K ^ (0xDEADBEEF12365412) #Constante
+    rotate_bits = P %  64 #Rotamos a la derecha
+    K = ((K >> rotate_bits) | (K << (64 - rotate_bits))) & 0xFFFFFFFFFFFFFFFF
     return K #K es la key generada
 
 def muta(P,S):
     S = (P + S) & 0xFFFFFFFFFFFFFFFF 
+    S = S ^ (0xC0FFEE1234567890) #Constante
+    rotate_bits = P % 64 #Rotamos a la izquierda
+    S = ((S << rotate_bits) | (S >> (64 - rotate_bits))) & 0xFFFFFFFFFFFFFFFF
     return S #S cambio, ahora se considera un nuevo Sn (S0)
 
 #Funcion para generar las keys
@@ -225,6 +233,7 @@ def fcm():
     S = int(input("Ingrese una semilla S: "))
     N = int(input("Ingrese el numero de keys a generar N: "))
     generate_keys(P,Q,S,N)
+    evaluar_calidad_llaves(Keys, "FCM") #Prueba
     #print("Keys generadas: ", Keys)
     mesg_bytes, psn, ceros = get_mensaje() #Pedimos y convertimos el mensaje a bytes
     resultado = cifrar_mensaje(mesg_bytes)
@@ -242,6 +251,7 @@ def fcmd():
     SD = int(input("Ingrese una semilla S: "))
     ND = int(input("Ingrese el numero de keys a generar N: "))
     generate_keysD(PD,QD,SD,ND)
+    evaluar_calidad_llaves(KeysD, "FCM")
     #print("Keys generadas: ", Keys)
     mesg_bytesd, psnD, = get_mensajed() #Pedimos y convertimos el mensaje a bytes
     descifrado = descifrar_mensaje(mesg_bytesd, psnD)
@@ -294,6 +304,7 @@ def kum():
         return main()
     s = input("Ingrese una nueva semilla S para actualizar las keys: ")
     generate_keys(P,Q,int(s),N)
+    evaluar_calidad_llaves(Keys, "KUM")
     mesg_bytes, psn, ceros = get_mensaje() #Pedimos y convertimos el mensaje a bytes
     resultado = cifrar_mensaje(mesg_bytes)
     print(f"{VERDE}Mensaje cifrado: {resultado.hex()}{RESET}")
@@ -311,6 +322,7 @@ def kumd():
         return main()
     SD = int(input("Ingrese una nueva semilla S para actualizar las keys: "))
     generate_keysD(PD,QD,SD,ND)
+    evaluar_calidad_llaves(KeysD, "KUM")
     #print("Keys generadas: ", Keys)
     mesg_bytesd, psnD, = get_mensajed() #Pedimos y convertimos el mensaje a bytes
     descifrado = descifrar_mensaje(mesg_bytesd, psnD)
@@ -410,5 +422,45 @@ def descifrar_mensaje(cifrado_bytes, psnD):
     
     return resultado_bytesD
 
+
+
+def evaluar_calidad_llaves(llaves, nombre):
+    if not llaves: #Evaluas existencia de las llaves
+        print("No hay llaves para evaluar")
+        return
+    
+    print(f"\n=== Evaluación de llaves ({nombre}) ===")
+    
+    # Distribución de bits
+    total_bits = len(llaves) * 64
+    unos = sum(bin(k).count('1') for k in llaves) #Cuenta cuanto unos hay en el entero de las llaves
+    proporcion_unos = unos / total_bits #Queres que la mitad sean uno, la otra mitad ceros
+    
+    print(f"Proporción de unos: {proporcion_unos:.3f} (ideal: 0.5)")
+    if proporcion_unos < 0.4 or proporcion_unos > 0.6: #Mensaje de advertencia en caso no se cumpla la proporcion
+        print("ADVERTENCIA: La proporcion de unos en las llaves no es adecuada. Reconciderar valores.")
+    
+    # Entropía aproximada
+    from math import log2
+    if proporcion_unos == 0 or proporcion_unos == 1: #Si todos son unos o ceros
+        entropia = 0
+    else:
+        entropia = - (proporcion_unos * log2(proporcion_unos) + (1-proporcion_unos) * log2(1-proporcion_unos))#Entropia de Shannon
+    print(f"Entropía aproximada: {entropia:.3f} bits/bit (ideal: 1.0)")
+    if entropia < 0.9:
+        print("ADVERTENCIA: La entropía es baja, las llaves no son suficientemente aleatorias.")
+    
+    #Diferencias entre llaves consecutivas (efecto avalancha en criptografia)
+    if len(llaves) > 1:
+        diferencias = []
+        for i in range(len(llaves)-1):
+            diff = bin(llaves[i] ^ llaves[i+1]).count('1') #Cuenta los bits diferentes entre dos llaves
+            diferencias.append(diff)
+        diff_promedio = sum(diferencias) / len(diferencias)
+        print(f"Diferencia promedio entre llaves: {diff_promedio:.1f} bits (ideal: 32)")
+        if diff_promedio < 20:
+            print("ADVERTENCIA: Las llaves son demasiado similares entre sí.")
+
 if __name__ == "__main__":
     main()
+
